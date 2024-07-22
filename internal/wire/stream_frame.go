@@ -15,6 +15,7 @@ type StreamFrame struct {
 	Data           []byte
 	Fin            bool
 	DataLenPresent bool
+	Priority       int
 
 	fromPool bool
 }
@@ -80,6 +81,15 @@ func parseStreamFrame(b []byte, typ uint64, _ protocol.Version) (*StreamFrame, i
 	if frame.Offset+frame.DataLen() > protocol.MaxByteCount {
 		return nil, 0, errors.New("stream data overflows maximum offset")
 	}
+
+	//对priority解析
+	if len(b) > 0 {
+		frame.Priority = int(b[0])
+		b = b[1:]
+	} else {
+		return nil, 0, io.EOF
+	}
+
 	return frame, startLen - len(b) + int(dataLen), nil
 }
 
@@ -108,6 +118,8 @@ func (f *StreamFrame) Append(b []byte, _ protocol.Version) ([]byte, error) {
 		b = quicvarint.Append(b, uint64(f.DataLen()))
 	}
 	b = append(b, f.Data...)
+	b = append(b, byte(f.Priority))
+
 	return b, nil
 }
 
