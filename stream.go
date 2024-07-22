@@ -81,6 +81,8 @@ type stream struct {
 	sender                 streamSender
 	receiveStreamCompleted bool
 	sendStreamCompleted    bool
+
+	priority int
 }
 
 var _ Stream = &stream{}
@@ -91,8 +93,9 @@ func newStream(
 	streamID protocol.StreamID,
 	sender streamSender,
 	flowController flowcontrol.StreamFlowController,
+	priority int,
 ) *stream {
-	s := &stream{sender: sender}
+	s := &stream{sender: sender, priority: priority}
 	senderForSendStream := &uniStreamSender{
 		streamSender: sender,
 		onStreamCompletedImpl: func() {
@@ -114,6 +117,14 @@ func newStream(
 	}
 	s.receiveStream = *newReceiveStream(streamID, senderForReceiveStream, flowController)
 	return s
+}
+
+func (s *stream) SetPriority(priority int) {
+	s.priority = priority
+}
+
+func (s *stream) Priority() int {
+	return s.priority
 }
 
 // need to define StreamID() here, since both receiveStream and readStream have a StreamID()
